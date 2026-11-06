@@ -3,8 +3,12 @@ import {extractJob} from './extract.js';
 import {readState,request} from './store.js';
 import {findDuplicates,today} from './model.js';
 import {$,el,notify,jobForm,formFields,changedFields,locationOptions} from './ui.js';
-let state, form, original, recordId, draftKey='draft:popup', activeTab, busy=false, draftQueue=Promise.resolve(), duplicateSignature='';
+let state, form, original, recordId, draftKey='draft:popup', activeTab, ready=false, busy=false, draftQueue=Promise.resolve(), duplicateSignature='';
 const showError = error => notify(error.message,true);
+function updateActions() {
+  for (const id of ['#capture','#clear','#save']) $(id).disabled = !ready || busy;
+}
+
 function persistDraft() {
   const value = {fields:formFields(form),recordId,original};
   draftQueue = draftQueue.then(() => request({type:'draft',key:draftKey,value})).catch(showError);
@@ -29,8 +33,8 @@ function showDuplicates() {
   }
 }
 async function save(event) {
-  event.preventDefault(); if (busy || !form.reportValidity()) return;
-  busy=true; $('#save').disabled=true;
+  event.preventDefault(); if (!ready || !form || busy || !form.reportValidity()) return;
+  busy=true; updateActions();
   try {
     await draftQueue;
     const fields = recordId ? changedFields(original,formFields(form)) : formFields(form);
@@ -40,17 +44,18 @@ async function save(event) {
       result = await request({type:'save',fields,draftKey,allowDuplicate:true});
     }
     state = await readState(); mount(result.record,result.record); locationOptions(state); notify('Saved to your dashboard.');
-  } catch(error) { showError(error); } finally { busy=false; $('#save').disabled=false; }
+  } catch(error) { showError(error); } finally { busy=false; updateActions(); }
 }
 $('#dashboard').addEventListener('click',() => chrome.tabs.create({url:chrome.runtime.getURL('dashboard.html')}));
 $('#clear').addEventListener('click',async () => {
+  if (!ready || !form || busy) return;
   if (Object.entries(formFields(form)).some(([key,value]) => value && value !== ({stage:'To apply',email:'',appliedDate:today()}[key] || '')) && !confirm('Clear this preview and start a new application? Saved applications will remain.')) return;
   mount({email:''}); persistDraft(); $('#capture-info').textContent='Enter details manually or capture the current job page.'; notify('New application');
 });
 async function capture() {
-  if (busy) return;
+  if (!ready || !form || busy) return;
   if ((form.elements.company.value || form.elements.position.value) && !confirm('Replace this preview with details from the current page? Saved applications will remain.')) return;
-  busy=true; $('#capture').disabled=true; notify('Reading this page…');
+  busy=true; updateActions(); notify('Reading this page…');
   try {
     if (!activeTab?.id || !/^https?:/.test(activeTab.url || '')) throw new Error('Capture works on web pages. Open a job listing, or enter the details manually below.');
     const results = await chrome.scripting.executeScript({target:{tabId:activeTab.id},func:extractJob});
@@ -75,7 +80,7 @@ async function capture() {
     mount({...data,email:''});
     $('#capture-info').textContent = `${data.method}. ${data.multiple ? 'Multiple jobs found; open a single listing for a better capture. ' : ''}${data.review}`;
     persistDraft(); notify('Captured. Review before saving.');
-  } catch(error) { notify(`${error.message} You can still enter details manually.`,true); } finally { busy=false; $('#capture').disabled=false; }
+  } catch(error) { notify(`${error.message} You can still enter details manually.`,true); } finally { busy=false; updateActions(); }
 }
 $('#capture').addEventListener('click',capture);
 async function init() {
@@ -85,8 +90,9 @@ async function init() {
     const draft = state.drafts[draftKey];
     mount(draft?.fields || {email:''},draft?.original || null);
     locationOptions(state);
-    if (draft) notify('Unsaved preview restored.');
+    ready=true; updateActions();
+    notify(draft ? 'Unsaved preview restored.' : 'Stored only on this device');
     chrome.storage.onChanged.addListener(async (changes,area) => { if (area==='local' && changes.ledger) { try { state=await readState(); locationOptions(state); showDuplicates(); } catch(error) { showError(error); } } });
-  } catch(error) { showError(error); $('#capture').disabled=true; $('#save').disabled=true; }
+  } catch(error) { ready=false; updateActions(); notify(`Could not load your tracker: ${error.message} Close and reopen the popup to retry.`,true); }
 }
 init();

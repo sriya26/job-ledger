@@ -33,7 +33,7 @@ Edit `EMAIL_CHOICES` in `config.js`, then click **Reload** on the extension's ca
 
 The dashboard updates automatically. Capture does not submit applications or detect submission success. Browser pages such as `chrome://` and some protected pages cannot be read; use manual entry there. For a Greenhouse application embedded on a company website, click **Enable embedded Greenhouse capture** when prompted, then allow Chrome’s site-access request. This one-time permission lets Capture read the job inside the frame. If Chrome closes the popup during the prompt, reopen it and click Capture again. Other inaccessible cross-origin forms still require opening the form directly or manual entry.
 
-Captures use structured JobPosting data first, platform-specific selectors second, and visible headings/labels as a fallback. Greenhouse, Lever, Workday, and LinkedIn have initial rules. Websites change and employers customize their pages; always review results. A page with several job postings must be narrowed to an individual job. Missing company or location is left blank, not fabricated.
+Captures use structured JobPosting data first, platform-specific selectors second, and visible headings/labels as a fallback. Greenhouse, Lever, Workday, and LinkedIn have initial rules. LinkedIn and Handshake also work on their search pages, where the list is on the left and the selected job on the right. Capture reads the job open in the right-hand panel by its layout: the large job title, the company name just above it, and the location below it. It saves the job's permanent link instead of the search link. You can capture before or after applying; set the stage to **Applied** once you submit. Websites change and employers customize their pages; always review results. A page with several job postings must be narrowed to an individual job. Missing company or location is left blank, not fabricated.
 
 Repeated captures show possible matches. **Load existing** retains your notes, dates, stage, and email. To save a separate application anyway, use Save and confirm the duplicate warning. Distinct requisition IDs remain separate.
 
@@ -49,7 +49,7 @@ Unsaved popup previews are stored per browser tab and restored when you reopen t
 - Hide optional columns with **Columns**. These preferences and sorting are remembered.
 - Company, stage, and position stay fixed while scrolling on wide screens. Fewer columns remain fixed on narrow screens to leave room for the remaining data.
 - Click the arrow beside a job URL to open it in a new tab.
-- Delete through the detail panel, with confirmation.
+- Click **Delete** in the last column, after Notes, in any table row, or delete through the detail panel. Both ask for confirmation.
 
 Stages: To apply, Applied, Assessment, Interview, Offer, Rejected, Withdrawn. New applications automatically receive today’s local applied date. Moving to a later stage preserves the original applied date. Moving a saved application to any stage after Applied sets its response date to today. This happens in the table, the detail panel, and the popup. You can still edit that date, and a response date you type in the same edit is kept.
 

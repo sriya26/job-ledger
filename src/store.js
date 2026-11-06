@@ -22,7 +22,12 @@ export async function mutate(storage, message) {
       if (message.draftKey) delete state.drafts[message.draftKey];
       result = {record}; break;
     }
-    case 'delete': state.records = state.records.filter(r => r.id !== message.id); break;
+    case 'delete':
+      state.records = state.records.filter(r => r.id !== message.id);
+      for (const [key,draft] of Object.entries(state.drafts)) {
+        if (draft?.recordId === message.id || draft?.original?.id === message.id) delete state.drafts[key];
+      }
+      break;
     case 'draft': {
       if (typeof message.key !== 'string' || !message.key.startsWith('draft:')) throw new Error('Invalid draft key.');
       if (message.value === null) delete state.drafts[message.key];

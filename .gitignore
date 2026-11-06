@@ -3,3 +3,4 @@ artifacts/
 test-results/
 .DS_Store
 config.js
+Screenshot*.png

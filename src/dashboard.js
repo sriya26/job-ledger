@@ -4,7 +4,7 @@ import {readState,request} from './store.js';
 import {$,el,notify,jobForm,formFields,changedFields,locationOptions,emailSelect,stageClass,download} from './ui.js';
 const columns = [
   ['number','#',52],['company','Aa  Company',220],['stage','◉  Stage',155],['position','Aa  Position',280],
-  ['appliedDate','▦  Applied date',150],['responseDate','▦  Response date',150],['email','@  Email used',240],['location','⌖  Job location',240],['jobUrl','↗  Job URL',260],['notes','≡  Notes',270]
+  ['appliedDate','▦  Applied date',150],['responseDate','▦  Response date',150],['email','@  Email used',240],['location','⌖  Job location',240],['jobUrl','↗  Job URL',260],['notes','≡  Notes',270],['actions','Actions',85]
 ];
 let state, detailForm, original=null, detailId=null, panelBusy=false, incoming=null, draftQueue=Promise.resolve(), pendingRender=false;
 const draftKey='draft:dashboard';
@@ -20,13 +20,13 @@ function render() {
   selectOptions('#stage-filter',[...STAGES,'in-process'],'All stages');
   selectOptions('#location-filter',[...new Set(state.records.map(r=>r.location).filter(Boolean))].sort(),'All locations');
   selectOptions('#email-filter',[...new Set(state.records.map(r=>r.email).filter(Boolean))].sort(),'All emails');
-  const hidden=state.preferences.hiddenColumns || [], visible=columns.filter(([key])=>!hidden.includes(key));
+  const hidden=state.preferences.hiddenColumns || [], visible=columns.filter(([key])=>key==='actions'||!hidden.includes(key));
   $('#table-cols').replaceChildren(...visible.map(([, ,width])=>el('col',{style:`width:${width}px`})));
   const currentSort = $('#sort').value;
   $('#table-head').replaceChildren(...visible.map(([key,label])=>{
     const active=currentSort.startsWith(`${key}:`), ascending=currentSort.endsWith(':asc');
     const header=el('th',{scope:'col',class:['company','stage','position'].includes(key)?`pin pin-${key}`:'','aria-sort':active?(ascending?'ascending':'descending'):'none'});
-    header.append(key==='number'?document.createTextNode(label):el('button',{class:'column-sort',title:`Sort ${label.replace(/^[^ ]+ +/,'')} ${active&&ascending?'descending':'ascending'}`,onclick:()=>setSort(`${key}:${active&&ascending?'desc':'asc'}`)},label,el('span',{'aria-hidden':'true'},active?(ascending?' ↑':' ↓'):' ↕')));
+    header.append(['number','actions'].includes(key)?document.createTextNode(label):el('button',{class:'column-sort',title:`Sort ${label.replace(/^[^ ]+ +/,'')} ${active&&ascending?'descending':'ascending'}`,onclick:()=>setSort(`${key}:${active&&ascending?'desc':'asc'}`)},label,el('span',{'aria-hidden':'true'},active?(ascending?' ↑':' ↓'):' ↕')));
     return header;
   }));
   const records=visibleRecords(state.records,filters());
@@ -39,6 +39,7 @@ function render() {
 function tableCell(record,key,index) {
   const td=el('td',{class:['company','stage','position'].includes(key)?`pin pin-${key}`:key==='number'?'number-cell':''});
   if(key==='number'){td.textContent=index+1;return td;}
+  if(key==='actions'){td.append(el('button',{class:'row-delete',type:'button',title:'Delete application','aria-label':`Delete ${record.company || record.position} application`,onclick:event=>deleteRow(record,event.currentTarget)},'Delete'));return td;}
   let control;
   if(key==='stage'){control=el('select',{class:`stage ${stageClass(record.stage)}`,'aria-label':`Stage for ${record.company}`},STAGES.map(s=>el('option',{value:s},`● ${s}`)));}
   else if(key==='email')control=emailSelect({'aria-label':`email for ${record.company || record.position}`},record.email || '');
@@ -58,8 +59,17 @@ function tableCell(record,key,index) {
   else td.append(control);
   return td;
 }
+async function deleteRow(record,button){
+  const label=[record.company,record.position].filter(Boolean).join(' — ');
+  if(!confirm(`Delete ${label || 'this application'}? This cannot be undone.`))return;
+  button.disabled=true;
+  try{
+    await request({type:'delete',id:record.id});
+    state=await readState();render();notify('Application deleted.');
+  }catch(error){button.disabled=false;reportError(error);}
+}
 function renderColumnMenu() {
-  $('#columns').replaceChildren(...columns.filter(([key])=>!['company','stage','position'].includes(key)).map(([key,label])=>{
+  $('#columns').replaceChildren(...columns.filter(([key])=>!['company','stage','position','actions'].includes(key)).map(([key,label])=>{
     const input=el('input',{type:'checkbox'});input.checked=!(state.preferences.hiddenColumns||[]).includes(key);
     input.addEventListener('change',async()=>{try{const hidden=new Set(state.preferences.hiddenColumns||[]);input.checked?hidden.delete(key):hidden.add(key);await request({type:'preferences',value:{hiddenColumns:[...hidden]}});state=await readState();render();}catch(error){reportError(error);}});
     return el('label',{},input,label.replace(/^[^A-Za-z]* /,''));
@@ -114,7 +124,7 @@ async function setSort(value){$('#sort').value=value;render();try{await request(
 $('#sort').addEventListener('change',()=>setSort($('#sort').value));
 function initializeSort(){
   const options=[el('option',{value:'createdAt:desc'},'Newest added'),el('option',{value:'createdAt:asc'},'Oldest added')];
-  for(const [key,label] of columns.filter(([key])=>key!=='number')){
+  for(const [key,label] of columns.filter(([key])=>!['number','actions'].includes(key))){
     const name=label.replace(/^[^ ]+ +/,'');
     for(const direction of ['asc','desc'])options.push(el('option',{value:`${key}:${direction}`},`${name} ${direction==='asc'?'↑':'↓'}`));
   }

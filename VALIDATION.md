@@ -16,3 +16,7 @@ Extraction coverage: Greenhouse, Lever, Workday, LinkedIn, generic markup, neste
 - Disposable test-only copy with Greenhouse host access already granted: Capture reads the company and position from inside the frame, matches the Greenhouse job ID, and preserves the outer page URL.
 
 The live-page check script is not kept in the repository. The native optional-permission approval dialog itself was not automated. The shipped manifest has optional host permissions, not the test copy's required host permissions. No changes were made to the user's Chrome profile or saved applications.
+
+## Popup startup race
+
+`npm run test:startup` passes in real Chromium with the unpacked extension. The test delays storage initialization and dispatches early Capture/New clicks, then verifies normal readiness. It also simulates a storage initialization failure and checks that all form actions remain disabled with an actionable error. Neither scenario produces uncaught errors. Capture, New, and Save start disabled in HTML and have readiness guards in their handlers.

@@ -95,3 +95,4 @@ button.col:hover,.col:hover{background:#ffffff08}.col.selected{background:#fffff
 .viz-tip strong{color:#f0efec;font-weight:600}
 @media(max-width:1200px){.kpi-row,.kpi-row.six{grid-template-columns:repeat(3,minmax(0,1fr))}.viz-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.viz-card.span-2{grid-column:1/-1}}
 @media(max-width:760px){.kpi-row,.kpi-row.six{grid-template-columns:repeat(2,minmax(0,1fr))}.viz-grid{grid-template-columns:minmax(0,1fr)}.kpi-value{font-size:24px}.col-plot{height:190px}.avg-tag{display:none}}
+.company-cell input{min-width:0;flex:1}.row-delete{flex:none;padding:4px 5px;border:0;background:transparent;color:#b9847e;font-size:11px}.row-delete:hover{background:#4b2c29;color:#ffc3b9}.row-delete:focus-visible{outline:2px solid #ed9994}
